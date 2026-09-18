@@ -20,7 +20,9 @@ def _headers() -> dict[str, str]:
     return {
         "User-Agent": cfg.USER_AGENT,
         "Accept": "application/json,text/html,*/*",
-        # Root storefront is already EN + EUR; cookie pins EUR presentment
+        # Root storefront is already EN + EUR; cookie pins EUR presentment.
+        # Keep this cookie on every request — do NOT add &currency= to the
+        # products.json URL instead, it markets-filters the catalog (796 vs 799).
         "Cookie": f"cart_currency={cfg.CURRENCY}; currency={cfg.CURRENCY}",
     }
 
@@ -93,7 +95,10 @@ def fetch_all_products_json() -> list[dict[str, Any]]:
     products: list[dict[str, Any]] = []
     page = 1
     while True:
-        url = f"{cfg.BASE_URL}/products.json?limit={limit}&page={page}&currency={cfg.CURRENCY}"
+        # NOTE: no &currency= param here — on this store it markets-filters the
+        # catalog to a subset (first page 249, ~796 total instead of ~799).
+        # EUR presentment comes from the cart_currency cookie in _headers() instead.
+        url = f"{cfg.BASE_URL}/products.json?limit={limit}&page={page}"
         time.sleep(cfg.RATE_LIMIT_DELAY)
         try:
             resp = requests.get(url, headers=_headers(), timeout=cfg.REQUEST_TIMEOUT)
